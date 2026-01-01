@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Marvel Rivals – Heroic Journey Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      /* Color palette inspired by modern game UI cyan–purple gradients */
+      --bg-gradient: radial-gradient(circle at top left, #1f2937 0%, #020617 40%, #020617 100%);
+      --accent-cyan: #22d3ee;
+      --accent-purple: #a855f7;
+      --accent-pink: #ec4899;
+      --glass-bg: rgba(15, 23, 42, 0.55);
+      --glass-border: rgba(148, 163, 184, 0.4);
+      --text-main: #e5e7eb;
+      --text-sub: #9ca3af;
+      --danger: #f97373;
+      --success: #4ade80;
+      --shadow-strong: 0 24px 60px rgba(15, 23, 42, 0.8);
+      --radius-lg: 24px;
+      --radius-md: 16px;
+      --transition-fast: 180ms cubic-bezier(0.25, 0.8, 0.25, 1);
+      --transition-med: 260ms cubic-bezier(0.22, 1, 0.36, 1);
+      --glass-blur: blur(28px);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text-main);
+      background:
+        radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.18) 0, transparent 45%),
+        radial-gradient(circle at 85% 80%, rgba(244, 114, 182, 0.22) 0, transparent 50%),
+        var(--bg-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+      overflow: hidden;
+    }
+
+    .noise-overlay {
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+      mix-blend-mode: soft-light;
+      opacity: 0.25;
+      z-index: 1;
+    }
+
+    .app-shell {
+      position: relative;
+      z-index: 2;
+      max-width: 1120px;
+      width: 100%;
+      min-height: 620px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr);
+      gap: 24px;
+      padding: 24px;
+      border-radius: 32px;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.55));
+      box-shadow: var(--shadow-strong);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      backdrop-filter: blur(32px) saturate(150%);
+      -webkit-backdrop-filter: blur(32px) saturate(150%);
+      overflow: hidden;
+    }
+
+    @media (max-width: 920px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+        min-height: 0;
+        max-height: 90vh;
+        overflow: hidden;
+      }
+    }
+
+    /* Left panel: filters & stats */
+    .left-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .header-card {
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.28), rgba(15, 23, 42, 0.9));
+      border-radius: var(--radius-lg);
+      padding: 18px 20px 16px;
+      border: 1px solid rgba(125, 211, 252, 0.5);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.85);
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .header-card::before {
+      content: "";
+      position: absolute;
+      inset: -40%;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(251, 113, 133, 0.18), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(94, 234, 212, 0.15), transparent 55%);
+      opacity: 0.7;
+      mix-blend-mode: screen;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .logo-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .logo-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 999px;
+      background: conic-gradient(from 210deg, #22d3ee, #a855f7, #ec4899, #22d3ee);
+      padding: 2px;
+      box-shadow: 0 0 32px rgba(59, 130, 246, 0.6);
+    }
+
+    .logo-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: inherit;
+      background: radial-gradient(circle at 30% 0%, rgba(248, 250, 252, 0.9), rgba(15, 23, 42, 0.96));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: "Orbitron", system-ui;
+      font-weight: 700;
+      font-size: 18px;
+      letter-spacing: 0.08em;
+      color: var(--accent-cyan);
+      text-shadow: 0 0 14px rgba(34, 211, 238, 0.9);
+    }
+
+    .logo-text {
+      flex: 1;
+    }
+
+    .logo-text h1 {
+      font-family: "Orbitron", system-ui;
+      letter-spacing: 0.08em;
+      font-size: 14px;
+      text-transform: uppercase;
+      color: rgba(226, 232, 240, 0.9);
+    }
+
+    .logo-text h2 {
+      font-size: 20px;
+      margin-top: 4px;
+      color: #f9fafb;
+    }
+
+    .season-pill {
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      color: var(--accent-cyan);
+    }
+
+    .progress-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 6px;
+    }
+
+    .progress-label {
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(148, 163, 184, 0.95);
+    }
+
+    .progress-shell {
+      flex: 1;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.85);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-fill {
+      position: absolute;
+      inset: 0;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple), var(--accent-pink));
+      box-shadow: 0 0 16px rgba(94, 234, 212, 0.6);
+      transition: width var(--transition-med);
+    }
+
+    .progress-points {
+      font-family: "Orbitron", system-ui;
+      font-size: 14px;
+      letter-spacing: 0.08em;
+    }
+
+    .sub-label {
+      font-size: 11px;
+      color: rgba(148, 163, 184, 0.9);
+      margin-top: 8px;
+    }
+
+    .filters-card {
+      background: var(--glass-bg);
+      border-radius: var(--radius-lg);
+      padding: 16px 16px 14px;
+      border: 1px solid var(--glass-border);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      box-shadow: 0 18px 38px rgba(15, 23, 42, 0.9);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .filters-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .filters-title {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: rgba(148, 163, 184, 0.95);
+    }
+
+    .filter-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      position: relative;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      color: var(--text-sub);
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.9));
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+      overflow: hidden;
+    }
+
+    .chip::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 0 0, rgba(34, 211, 238, 0.18), transparent 55%);
+      opacity: 0;
+      transition: opacity var(--transition-fast);
+      pointer-events: none;
+    }
+
+    .chip span.badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      font-size: 10px;
+      background: rgba(15, 23, 42, 0.9);
+      color: rgba(248, 250, 252, 0.9);
+    }
+
+    .chip:hover {
+      transform: translateY(-1px);
+      border-color: rgba(96, 165, 250, 0.9);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.8);
+      color: #e5e7eb;
+    }
+
+    .chip:hover::before {
+      opacity: 1;
+    }
+
+    .chip.active {
+      color: #e5e7eb;
+      border-color: rgba(96, 165, 250, 1);
+      background: radial-gradient(circle at 0 -30%, rgba(56, 189, 248, 0.28), rgba(15, 23, 42, 0.96));
+      box-shadow: 0 10px 28px rgba(37, 99, 235, 0.7);
+    }
+
+    .chip.active span.badge {
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    }
+
+    .micro-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-sub);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .micro-toggle input {
+      display: none;
+    }
+
+    .toggle-pill {
+      width: 32px;
+      height: 18px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      position: relative;
+      transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+    .toggle-knob {
+      position: absolute;
+      top: 1px;
+      left: 1px;
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 0%, #f9fafb, #111827);
+      box-shadow: 0 0 10px rgba(148, 163, 184, 0.8);
+      transition: transform var(--transition-fast);
+    }
+
+    .micro-toggle input:checked + .toggle-pill {
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+      border-color: transparent;
+      box-shadow: 0 0 18px rgba(56, 189, 248, 0.8);
+    }
+
+    .micro-toggle input:checked + .toggle-pill .toggle-knob {
+      transform: translateX(12px);
+    }
+
+    .stats-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 2px;
+    }
+
+    .stat-chip {
+      flex: 1;
+      border-radius: 14px;
+      padding: 8px 10px;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.8));
+      border: 1px solid rgba(148, 163, 184, 0.55);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+
+    .stat-label {
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      font-size: 10px;
+      color: rgba(148, 163, 184, 0.9);
+    }
+
+    .stat-value {
+      font-family: "Orbitron", system-ui;
+      font-size: 14px;
+      color: #f9fafb;
+      letter-spacing: 0.06em;
+    }
+
+    .stat-highlight {
+      color: var(--accent-cyan);
+    }
+
+    /* Right panel: list */
+    .right-panel {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.78));
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(148, 163, 184, 0.55);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      box-shadow: 0 20px 46px rgba(15, 23, 42, 0.9);
+      padding: 16px 18px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .right-panel::before {
+      content: "";
+      position: absolute;
+      inset: -60%;
+      background:
+        radial-gradient(circle at 10% 0, rgba(56, 189, 248, 0.18), transparent 60%),
+        radial-gradient(circle at 90% 100%, rgba(129, 140, 248, 0.16), transparent 60%);
+      mix-blend-mode: soft-light;
+      pointer-events: none;
+    }
+
+    .right-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .title-group h3 {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: rgba(148, 163, 184, 0.9);
+    }
+
+    .title-group h4 {
+      font-size: 18px;
+      margin: 0;
+      color: #f9fafb;
+    }
+
+    .title-sub {
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+
+    .clear-btn {
+      border-radius: 999px;
+      border: 1px solid rgba(248, 113, 113, 0.65);
+      background: radial-gradient(circle at 0 0, rgba(248, 113, 113, 0.2), rgba(15, 23, 42, 0.95));
+      color: #fee2e2;
+      padding: 6px 10px;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast), opacity var(--transition-fast);
+    }
+
+    .clear-btn-icon {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(252, 165, 165, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+    }
+
+    .clear-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 24px rgba(185, 28, 28, 0.7);
+      background: radial-gradient(circle at 0 0, rgba(248, 113, 113, 0.32), rgba(15, 23, 42, 0.98));
+    }
+
+    .clear-btn:active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: 0 4px 12px rgba(127, 29, 29, 0.7);
+    }
+
+    .clear-btn[disabled] {
+      opacity: 0.4;
+      cursor: default;
+      box-shadow: none;
+    }
+
+    .list-wrapper {
+      position: relative;
+      z-index: 1;
+      margin-top: 4px;
+      flex: 1;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(31, 41, 55, 0.9);
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.92));
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .section-tabs {
+      display: flex;
+      border-bottom: 1px solid rgba(31, 41, 55, 0.9);
+      background: linear-gradient(90deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.92));
+    }
+
+    .tab {
+      position: relative;
+      flex: 1;
+      padding: 8px 10px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      text-align: center;
+      cursor: pointer;
+      color: rgba(148, 163, 184, 0.85);
+      transition: color var(--transition-fast), background var(--transition-fast);
+    }
+
+    .tab::after {
+      content: "";
+      position: absolute;
+      left: 8%;
+      right: 8%;
+      bottom: 0;
+      height: 2px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.8), transparent);
+      opacity: 0;
+      transform: scaleX(0.4);
+      transition: opacity var(--transition-fast), transform var(--transition-fast);
+    }
+
+    .tab.active {
+      color: #e5e7eb;
+      background: radial-gradient(circle at 50% -60%, rgba(56, 189, 248, 0.24), transparent 70%);
+    }
+
+    .tab.active::after {
+      opacity: 1;
+      transform: scaleX(1);
+    }
+
+    .achievements-list {
+      flex: 1;
+      overflow: auto;
+      padding: 8px 8px 10px;
+      display: grid;
+      grid-auto-rows: minmax(0, auto);
+      gap: 8px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(55, 65, 81, 0.9) transparent;
+    }
+
+    .achievements-list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .achievements-list::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, rgba(148, 163, 184, 0.9), rgba(55, 65, 81, 0.9));
+      border-radius: 999px;
+    }
+
+    .achievement {
+      position: relative;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(31, 41, 55, 0.95);
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.95));
+      box-shadow: 0 10px 26px rgba(15, 23, 42, 0.9);
+      cursor: pointer;
+      transform-origin: center;
+      transition:
+        border-color var(--transition-fast),
+        box-shadow var(--transition-fast),
+        transform var(--transition-fast),
+        background var(--transition-fast);
+      overflow: hidden;
+    }
+
+    .achievement::before {
+      content: "";
+      position: absolute;
+      inset: -40%;
+      background:
+        radial-gradient(circle at 0 0, rgba(56, 189, 248, 0.14), transparent 60%),
+        radial-gradient(circle at 100% 100%, rgba(94, 234, 212, 0.12), transparent 60%);
+      opacity: 0;
+      mix-blend-mode: screen;
+      transition: opacity var(--transition-fast);
+      pointer-events: none;
+    }
+
+    .achievement:hover {
+      border-color: rgba(55, 65, 81, 0.9);
+      box-shadow: 0 16px 32px rgba(15, 23, 42, 0.96);
+      transform: translateY(-1px);
+    }
+
+    .achievement:hover::before {
+      opacity: 1;
+    }
+
+    .achievement.completed {
+      border-color: rgba(52, 211, 153, 0.9);
+      background: radial-gradient(circle at 0 -40%, rgba(52, 211, 153, 0.22), rgba(15, 23, 42, 0.98));
+      box-shadow: 0 18px 40px rgba(16, 185, 129, 0.65);
+    }
+
+    .achievement.completed::before {
+      opacity: 1;
+    }
+
+    .achievement.completed .achievement-name {
+      color: #bbf7d0;
+    }
+
+    .achievement.completed .achievement-desc {
+      color: rgba(187, 247, 208, 0.75);
+    }
+
+    .achievement-meta {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+
+    .pill-small {
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: rgba(15, 23, 42, 0.9);
+      color: rgba(148, 163, 184, 0.9);
+    }
+
+    .pill-small.hero {
+      border-color: rgba(96, 165, 250, 0.9);
+      color: rgba(191, 219, 254, 0.9);
+      background: radial-gradient(circle at 0 0, rgba(59, 130, 246, 0.4), rgba(15, 23, 42, 0.95));
+    }
+
+    .pill-small.points {
+      border-color: rgba(52, 211, 153, 0.9);
+      color: rgba(167, 243, 208, 0.95);
+    }
+
+    .hero-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      padding: 2px;
+      background: conic-gradient(from 200deg, var(--accent-cyan), var(--accent-purple), var(--accent-pink), var(--accent-cyan));
+      box-shadow: 0 0 12px rgba(96, 165, 250, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hero-icon-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: inherit;
+      background: radial-gradient(circle at 30% 0, #f9fafb, #020617);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-family: "Orbitron", system-ui;
+      color: var(--accent-cyan);
+    }
+
+    .achievement-main {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .achievement-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: #e5e7eb;
+    }
+
+    .achievement-desc {
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+
+    .check-shell {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    .check-circle {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      border: 2px solid rgba(55, 65, 81, 0.9);
+      background: radial-gradient(circle at 30% 0, rgba(15, 23, 42, 1), rgba(15, 23, 42, 0.96));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      color: transparent;
+      box-shadow: 0 0 0 rgba(16, 185, 129, 0);
+      transition:
+        border-color var(--transition-fast),
+        background var(--transition-fast),
+        box-shadow var(--transition-fast),
+        transform var(--transition-fast),
+        color var(--transition-fast);
+    }
+
+    .achievement.completed .check-circle {
+      border-color: rgba(52, 211, 153, 0.9);
+      background: radial-gradient(circle at 30% 0, #bbf7d0, #16a34a);
+      color: #022c22;
+      box-shadow: 0 0 18px rgba(52, 211, 153, 0.95);
+      transform: scale(1.08);
+    }
+
+    .check-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: rgba(148, 163, 184, 0.9);
+    }
+
+    .achievement.completed .check-label {
+      color: rgba(187, 247, 208, 0.9);
+    }
+
+    /* “Satisfying tick” confetti pulse */
+    .achievement.completed .check-circle::after {
+      content: "";
+      position: absolute;
+      inset: -3px;
+      border-radius: inherit;
+      border: 1px solid rgba(110, 231, 183, 0.9);
+      opacity: 0;
+      animation: pulse-ring 540ms ease-out;
+    }
+
+    @keyframes pulse-ring {
+      0% {
+        transform: scale(1);
+        opacity: 0.9;
+      }
+      100% {
+        transform: scale(1.45);
+        opacity: 0;
+      }
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      inset-inline: 0;
+      bottom: 18px;
+      display: flex;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 40;
+    }
+
+    .toast-inner {
+      pointer-events: auto;
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #ecfeff;
+      background: radial-gradient(circle at 0 0, rgba(34, 211, 238, 0.3), rgba(15, 23, 42, 0.98));
+      border: 1px solid rgba(34, 211, 238, 0.8);
+      box-shadow: 0 18px 40px rgba(8, 47, 73, 0.9);
+      transform: translateY(120%);
+      opacity: 0;
+      transition: transform var(--transition-med), opacity var(--transition-med);
+    }
+
+    .toast-inner.visible {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .toast-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #22d3ee;
+      box-shadow: 0 0 14px rgba(34, 211, 238, 0.9);
+    }
+
+    .toast-key {
+      font-family: "Orbitron", system-ui;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-size: 11px;
+    }
+
+    /* Simple hero-color mapping for gradients (optional micro detail) */
+    .achievement[data-hero="Rocket Raccoon"] .hero-icon {
+      background: conic-gradient(from 200deg, #facc15, #fb923c, #f97316, #facc15);
+    }
+
+    .achievement[data-hero="Rogue"] .hero-icon {
+      background: conic-gradient(from 220deg, #22c55e, #4ade80, #a3e635, #22c55e);
+    }
+
+    .achievement[data-hero="Gambit"] .hero-icon {
+      background: conic-gradient(from 200deg, #a855f7, #6366f1, #ec4899, #a855f7);
+    }
+
+    .achievement[data-hero="Daredevil"] .hero-icon {
+      background: conic-gradient(from 200deg, #ef4444, #b91c1c, #fecaca, #ef4444);
+    }
+
+    .achievement[data-hero="Angela"] .hero-icon {
+      background: conic-gradient(from 200deg, #f97316, #fde047, #fb7185, #f97316);
+    }
+
+    .achievement[data-hero="Phoenix"] .hero-icon {
+      background: conic-gradient(from 200deg, #f97316, #22c55e, #f97316, #f97316);
+    }
+
+    .achievement[data-hero="Black Widow"] .hero-icon {
+      background: conic-gradient(from 200deg, #f97373, #ef4444, #111827, #f97373);
+    }
+
+    .achievement[data-hero="Winter Soldier"] .hero-icon {
+      background: conic-gradient(from 200deg, #38bdf8, #0ea5e9, #1f2937, #38bdf8);
+    }
+
+    .achievement[data-hero="Captain America"] .hero-icon {
+      background: conic-gradient(from 200deg, #3b82f6, #1d4ed8, #ef4444, #3b82f6);
+    }
+
+    .achievement[data-hero="Doctor Strange"] .hero-icon {
+      background: conic-gradient(from 200deg, #22c55e, #22d3ee, #6366f1, #22c55e);
+    }
+
+    .achievement[data-hero="Loki"] .hero-icon {
+      background: conic-gradient(from 200deg, #22c55e, #a3e635, #facc15, #22c55e);
+    }
+
+    .achievement[data-hero="Monster Hulk"],
+    .achievement[data-hero="Bruce Banner"],
+    .achievement[data-hero="Hulk"] .hero-icon {
+      background: conic-gradient(from 200deg, #22c55e, #16a34a, #4ade80, #22c55e);
+    }
+
+    .achievement[data-hero="Punisher"] .hero-icon {
+      background: conic-gradient(from 200deg, #9ca3af, #4b5563, #020617, #9ca3af);
+    }
+
+    .achievement[data-hero="Blade"] .hero-icon {
+      background: conic-gradient(from 200deg, #111827, #f97373, #facc15, #111827);
+    }
+
+    .achievement[data-hero="Human Torch"] .hero-icon {
+      background: conic-gradient(from 200deg, #fb923c, #f97316, #facc15, #fb923c);
+    }
+
+    .achievement[data-hero="Jeff the Land Shark"] .hero-icon {
+      background: conic-gradient(from 200deg, #22d3ee, #0ea5e9, #38bdf8, #22d3ee);
+    }
+
+    .achievement[data-hero="Black Panther"] .hero-icon {
+      background: conic-gradient(from 200deg, #6366f1, #4f46e5, #a855f7, #6366f1);
+    }
+
+    .achievement[data-hero="Mantis"] .hero-icon {
+      background: conic-gradient(from 200deg, #22c55e, #14b8a6, #a7f3d0, #22c55e);
+    }
+
+    /* Small device tweaks */
+    @media (max-width: 600px) {
+      body {
+        padding: 16px 10px;
+      }
+      .app-shell {
+        padding: 16px;
+        border-radius: 24px;
+      }
+      .right-panel {
+        padding-inline: 12px;
+      }
+      .achievement {
+        grid-template-columns: auto minmax(0, 1.5fr) auto;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="noise-overlay"></div>
+
+  <main class="app-shell" aria-label="Marvel Rivals Heroic Journey Tracker">
+    <section class="left-panel">
+      <!-- Header / Points / Progress -->
+      <section class="header-card" aria-label="Overview card">
+        <div class="logo-row">
+          <div class="logo-mark" aria-hidden="true">
+            <div class="logo-inner">MR</div>
+          </div>
+          <div class="logo-text">
+            <h1>Heroic Journey</h1>
+            <h2>Achievement Battleplan</h2>
+          </div>
+          <div class="season-pill">Season 3.5 – Custom</div>
+        </div>
+
+        <div class="progress-row">
+          <div>
+            <div class="progress-label">Completion Pulse</div>
+            <div class="progress-shell" aria-hidden="true">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+          </div>
+          <div class="progress-points" id="progressText">0 / 460⭐</div>
+        </div>
+
+        <p class="sub-label" id="subtitle">
+          Tap any achievement tile to lock in a satisfying tick.
+        </p>
+      </section>
+
+      <!-- Filters / stats -->
+      <section class="filters-card" aria-label="Filters and stats">
+        <div class="filters-title-row">
+          <div class="filters-title">Filters & mood</div>
+          <label class="micro-toggle">
+            <input type="checkbox" id="focusToggle" />
+            <div class="toggle-pill">
+              <div class="toggle-knob"></div>
+            </div>
+            Focus mode
+          </label>
+        </div>
+
+        <div class="filter-group" id="filterGroup">
+          <button class="chip active" data-filter="all" type="button">
+            All
+            <span class="badge" id="badgeAll">0</span>
+          </button>
+          <button class="chip" data-filter="hero-specific" type="button">
+            Hero synergy
+            <span class="badge" id="badgeHero">0</span>
+          </button>
+          <button class="chip" data-filter="streak" type="button">
+            Streak / multi-KO
+            <span class="badge" id="badgeStreak">0</span>
+          </button>
+          <button class="chip" data-filter="map-specific" type="button">
+            Map specific
+            <span class="badge" id="badgeMap">0</span>
+          </button>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-chip">
+            <div class="stat-label">Achievements done</div>
+            <div class="stat-value"><span id="completedCount" class="stat-highlight">0</span> / <span id="totalCount">0</span></div>
+          </div>
+          <div class="stat-chip">
+            <div class="stat-label">Stars banked</div>
+            <div class="stat-value"><span id="earnedStars" class="stat-highlight">0</span> ⭐</div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- Right panel: actual list -->
+    <section class="right-panel">
+      <header class="right-panel-header">
+        <div class="title-group">
+          <h3>Checklist</h3>
+          <h4>Tap to tick achievements</h4>
+          <p class="title-sub">
+            Progress auto‑saves in this browser so the grind feels more permanent.
+          </p>
+        </div>
+        <button class="clear-btn" id="clearCompleteBtn" type="button" disabled>
+          <span class="clear-btn-icon">✕</span>
+          Clear ticks
+        </button>
+      </header>
+
+      <section class="list-wrapper">
+        <div class="section-tabs" role="tablist">
+          <div class="tab active" data-tab="heroic-journey" role="tab" aria-selected="true">
+            Heroic journey
+          </div>
+          <div class="tab" data-tab="custom-notes" role="tab" aria-selected="false">
+            Custom notes
+          </div>
+        </div>
+
+        <!-- Achievements list -->
+        <div class="achievements-list" id="achievementsList" role="listbox" aria-label="Heroic journey achievements">
+          <!-- Achievements are injected by JavaScript -->
+        </div>
+
+        <!-- Custom notes area -->
+        <div class="achievements-list" id="notesList" style="display:none;">
+          <div class="achievement" style="cursor:default;">
+            <div class="hero-icon">
+              <div class="hero-icon-inner" style="font-size:12px;">FX</div>
+            </div>
+            <div class="achievement-main">
+              <div class="achievement-name">Add your own micro‑goals</div>
+              <div class="achievement-desc">
+                Use this free text area to jot down team comps, map routes, or reminder combos.
+              </div>
+              <textarea id="notesArea" rows="6" style="margin-top:6px; width:100%; border-radius:10px; border:1px solid rgba(31,41,55,0.9); background:rgba(15,23,42,0.96); color:#e5e7eb; padding:8px; font-size:12px; resize:vertical; outline:none; box-shadow:0 8px 20px rgba(15,23,42,0.9);"></textarea>
+            </div>
+            <div class="check-shell" style="align-self:flex-start;">
+              <div class="pill-small points">Notes</div>
+              <div style="font-size:10px; margin-top:4px; color:rgba(148,163,184,0.9);">Auto‑saved</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <!-- Toast -->
+  <div class="toast">
+    <div class="toast-inner" id="toast">
+      <div class="toast-dot"></div>
+      <span class="toast-key" id="toastKey">Achievement</span>
+      <span id="toastText">locked in – nice clutch.</span>
+    </div>
+  </div>
+
+  <script>
+    // === Data ===============================================================
+    // Titles / descriptions reproduced in spirit from Heroic Journey panel. [web:9][web:13][web:22]
+    const ACHIEVEMENTS = [
+      // From your screenshots – silver 10‑point row
+      {
+        id: "go-get-em-guardians",
+        name: "Go Get 'Em, Guardians!",
+        hero: "Rocket Raccoon",
+        desc: "As Rocket Raccoon, revive the Guardians of the Galaxy members 5 times.",
+        points: 10,
+        tags: ["hero-specific"]
+      },
+      {
+        id: "at-her-fingertips",
+        name: "At Her Fingertips",
+        hero: "Rogue",
+        desc: "As Rogue, obtain 10 different hero abilities with Ability Absorption.",
+        points: 10,
+        tags: ["hero-specific"]
+      },
+      {
+        id: "royal-flush",
+        name: "Royal Flush",
+        hero: "Gambit",
+        desc: "As Gambit, land 3 KOs with a single use of Ragin' Royal Flush.",
+        points: 10,
+        tags: ["hero-specific", "streak"]
+      },
+      {
+        id: "the-defenders",
+        name: "The Defenders",
+        hero: "Daredevil",
+        desc: "As Daredevil, partner with Marvel Knights members to land 10 KOs.",
+        points: 10,
+        tags: ["hero-specific"]
+      },
+      {
+        id: "hand-of-heven",
+        name: "Hand of Heven",
+        hero: "Angela",
+        desc: "As Angela, snare 4 enemies with a single use of Heven's Retribution.",
+        points: 10,
+        tags: ["hero-specific", "streak"]
+      },
+      {
+        id: "wish-upon-a-phoenix",
+        name: "Wish Upon a Phoenix",
+        hero: "Phoenix",
+        desc: "As Phoenix, strike 4 enemies with a single Endsong Inferno landing.",
+        points: 10,
+        tags: ["hero-specific", "streak"]
+      },
+      // Bronze 5‑point row
+      {
+        id: "red-reunion",
+        name: "Red Reunion",
+        hero: "Black Widow",
+        desc: "As Black Widow, partner with Winter Soldier to land 1 KO.",
+        points: 5,
+        tags: ["hero-specific"]
+      },
+      {
+        id: "rodent-rampage",
+        name: "Rodent Rampage",
+        hero: "Rocket Raccoon",
+        desc: "As Rocket Raccoon, assist Squirrel Girl in landing 1 KO.",
+        points: 5,
+        tags: ["hero-specific"]
+      },
+      {
+        id: "like-old-times",
+        name: "Like Old Times",
+        hero: "Captain America",
+        desc: "As Captain America, partner with Winter Soldier to land 1 KO.",
+        points: 5,
+        tags: ["hero-specific"]
+      },
+      {
+        id: "inner-strength",
+        name: "Inner Strength",
+        hero: "Doctor Strange",
+        desc: "As Doctor Strange, knock out the Hulk's soul with the Eye of Agamotto.",
+        points: 5,
+        tags: ["hero-specific"]
+      },
+      {
+        id: "brotherly-love",
+        name: "Brotherly Love",
+        hero: "Loki",
+        desc: "As Loki, assist Thor in landing 1 KO.",
+        points: 5,
+        tags: ["hero-specific"]
+      },
+      {
+        id: "puny-god",
+        name: "Puny God!",
+        hero: "Monster Hulk",
+        desc: "As Monster Hulk, slam an enemy Loki with World Breaker.",
+        points: 5,
+        tags: ["hero-specific"]
+      },
+      // Additional blue 10‑point achievements (screenshot 3 & 4)
+      {
+        id: "god-of-treachery",
+        name: "God of Treachery",
+        hero: "Loki",
+        desc: "As Loki, land one KO by stabbing from behind.",
+        points: 10,
+        tags: ["hero-specific"]
+      },
+      {
+        id: "smoke-screen",
+        name: "Smoke Screen",
+        hero: "Punisher",
+        desc: "As the Punisher, land 3 KOs amidst the smoke of Scourge Grenade in a single game.",
+        points: 10,
+        tags: ["hero-specific", "streak"]
+      },
+      {
+        id: "smart-is-new-smash",
+        name: "Smart Is New Smash",
+        hero: "Bruce Banner",
+        desc: "As Bruce Banner, land 1 KO within 3 seconds of calming down from the Hulk to Banner.",
+        points: 10,
+        tags: ["hero-specific", "streak"]
+      },
+      {
+        id: "southern-charm",
+        name: "Southern Charm",
+        hero: "Rogue",
+        desc: "As Rogue, land 1 KO with an assist from Gambit.",
+        points: 10,
+        tags: ["hero-specific"]
+      },
+      {
+        id: "devil-meets-dragon",
+        name: "Devil Meets Dragon",
+        hero: "Daredevil",
+        desc: "As Daredevil, take down an enemy Iron Fist.",
+        points: 10,
+        tags: ["hero-specific"]
+      },
+      {
+        id: "asgardians-of-the-galaxy",
+        name: "Asgardians of the Galaxy",
+        hero: "Angela",
+        desc: "As Angela, land 1 KO with an assist from Loki.",
+        points: 10,
+        tags: ["hero-specific"]
+      },
+      // Map streaks etc.
+      {
+        id: "old-haunts",
+        name: "Old Haunts",
+        hero: "Blade",
+        desc: "As Blade, land a 3‑player KO streak in Empire of Eternal Night: Central Park.",
+        points: 10,
+        tags: ["streak", "map-specific", "hero-specific"]
+      },
+      {
+        id: "hot-and-trending",
+        name: "Hot & Trending",
+        hero: "Human Torch",
+        desc: "As Human Torch, land 3 KOs with a single use of Supernova.",
+        points: 10,
+        tags: ["hero-specific", "streak"]
+      },
+      {
+        id: "snack-attack",
+        name: "Snack Attack!",
+        hero: "Jeff the Land Shark",
+        desc: "As Jeff the Land Shark, swallow 4 enemies with a single use of It's Jeff!",
+        points: 10,
+        tags: ["hero-specific", "streak"]
+      },
+      {
+        id: "king-of-the-dead",
+        name: "King of the Dead",
+        hero: "Black Panther",
+        desc: "As Black Panther, land a 3‑player KO streak in the Intergalactic Empire of Wakanda: Hall of Djalia.",
+        points: 10,
+        tags: ["hero-specific", "streak", "map-specific"]
+      },
+      {
+        id: "justice-for-all",
+        name: "Justice for All!",
+        hero: "Captain America",
+        desc: "As Captain America, land 3 KOs with a single use of Freedom Charge.",
+        points: 10,
+        tags: ["hero-specific", "streak"]
+      },
+      {
+        id: "victory-in-bloom",
+        name: "Victory in Bloom",
+        hero: "Mantis",
+        desc: "As Mantis, assist allies in achieving a team wipe.",
+        points: 10,
+        tags: ["hero-specific", "streak"]
+      }
+    ];
+
+    const STORAGE_KEY = "mr-heroic-journey-progress-v1";
+    const NOTES_KEY = "mr-heroic-journey-notes-v1";
+
+    // === State ===============================================================
+    let state = {
+      completed: new Set(),
+      focusMode: false,
+      filter: "all"
+    };
+
+    // === DOM references ======================================================
+    const achievementsListEl = document.getElementById("achievementsList");
+    const progressFillEl = document.getElementById("progressFill");
+    const progressTextEl = document.getElementById("progressText");
+    const subtitleEl = document.getElementById("subtitle");
+    const completedCountEl = document.getElementById("completedCount");
+    const totalCountEl = document.getElementById("totalCount");
+    const earnedStarsEl = document.getElementById("earnedStars");
+    const clearCompleteBtn = document.getElementById("clearCompleteBtn");
+    const focusToggleEl = document.getElementById("focusToggle");
+    const toastEl = document.getElementById("toast");
+    const toastKeyEl = document.getElementById("toastKey");
+    const toastTextEl = document.getElementById("toastText");
+    const notesArea = document.getElementById("notesArea");
+    const tabs = document.querySelectorAll(".tab");
+    const achievementsTab = document.querySelector('.tab[data-tab="heroic-journey"]');
+    const notesTab = document.querySelector('.tab[data-tab="custom-notes"]');
+    const notesListEl = document.getElementById("notesList");
+    const badges = {
+      all: document.getElementById("badgeAll"),
+      "hero-specific": document.getElementById("badgeHero"),
+      streak: document.getElementById("badgeStreak"),
+      "map-specific": document.getElementById("badgeMap")
+    };
+
+    // === Helpers =============================================================
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          state.completed = new Set(parsed.completed || []);
+          state.focusMode = !!parsed.focusMode;
+          state.filter = parsed.filter || "all";
+        }
+        const notes = localStorage.getItem(NOTES_KEY);
+        if (notes && notesArea) {
+          notesArea.value = notes;
+        }
+      } catch (e) {
+        console.warn("Could not load saved state", e);
+      }
+    }
+
+    function saveState() {
+      const payload = {
+        completed: Array.from(state.completed),
+        focusMode: state.focusMode,
+        filter: state.filter
+      };
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      } catch (e) {
+        console.warn("Could not persist state", e);
+      }
+    }
+
+    function saveNotes() {
+      try {
+        localStorage.setItem(NOTES_KEY, notesArea.value || "");
+      } catch (e) {
+        console.warn("Could not persist notes", e);
+      }
+    }
+
+    function computeStats() {
+      const total = ACHIEVEMENTS.length;
+      const completedCount = state.completed.size;
+      const totalStars = ACHIEVEMENTS.reduce((sum, a) => sum + a.points, 0);
+      const earnedStars = ACHIEVEMENTS.filter(a => state.completed.has(a.id)).reduce((sum, a) => sum + a.points, 0);
+      return { total, completedCount, totalStars, earnedStars };
+    }
+
+    function applyColorSubtitle(completedCount) {
+      if (completedCount === 0) {
+        subtitleEl.textContent = "Tap any achievement tile to lock in a satisfying tick.";
+      } else if (completedCount < 5) {
+        subtitleEl.textContent = "Nice start! Keep chaining those objectives like a KO streak.";
+      } else if (completedCount < 10) {
+        subtitleEl.textContent = "You are on a roll—this lobby has no idea what's coming.";
+      } else {
+        subtitleEl.textContent = "Full hero energy: you are basically a living highlight reel.";
+      }
+    }
+
+    function showToast({ key, text }) {
+      toastKeyEl.textContent = key || "Achievement";
+      toastTextEl.textContent = text || "updated.";
+      toastEl.classList.add("visible");
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => {
+        toastEl.classList.remove("visible");
+      }, 1900);
+    }
+
+    function renderBadges() {
+      const counts = {
+        all: ACHIEVEMENTS.length,
+        "hero-specific": 0,
+        streak: 0,
+        "map-specific": 0
+      };
+      ACHIEVEMENTS.forEach(a => {
+        a.tags.forEach(tag => {
+          if (counts[tag] !== undefined) counts[tag]++;
+        });
+      });
+      Object.keys(badges).forEach(key => {
+        if (badges[key]) badges[key].textContent = counts[key];
+      });
+    }
+
+    // Filter logic
+    function matchesFilter(achievement) {
+      if (state.filter === "all") return true;
+      return achievement.tags.includes(state.filter);
+    }
+
+    // === Rendering ===========================================================
+    function renderAchievements() {
+      achievementsListEl.innerHTML = "";
+      ACHIEVEMENTS.forEach(a => {
+        if (!matchesFilter(a)) return;
+
+        const item = document.createElement("article");
+        item.className = "achievement";
+        item.dataset.id = a.id;
+        item.dataset.hero = a.hero;
+        if (state.completed.has(a.id)) item.classList.add("completed");
+
+        const icon = document.createElement("div");
+        icon.className = "hero-icon";
+        icon.innerHTML = `<div class="hero-icon-inner">${a.hero[0]}</div>`;
+
+        const main = document.createElement("div");
+        main.className = "achievement-main";
+        const title = document.createElement("div");
+        title.className = "achievement-name";
+        title.textContent = a.name;
+
+        const desc = document.createElement("div");
+        desc.className = "achievement-desc";
+        desc.textContent = a.desc;
+
+        const meta = document.createElement("div");
+        meta.className = "achievement-meta";
+
+        const heroPill = document.createElement("div");
+        heroPill.className = "pill-small hero";
+        heroPill.textContent = a.hero;
+
+        const pointsPill = document.createElement("div");
+        pointsPill.className = "pill-small points";
+        pointsPill.textContent = `+${a.points}⭐`;
+
+        meta.appendChild(heroPill);
+        meta.appendChild(pointsPill);
+
+        main.appendChild(title);
+        main.appendChild(desc);
+        main.appendChild(meta);
+
+        const checkShell = document.createElement("div");
+        checkShell.className = "check-shell";
+        const checkCircle = document.createElement("div");
+        checkCircle.className = "check-circle";
+        checkCircle.textContent = "✓";
+        const label = document.createElement("div");
+        label.className = "check-label";
+        label.textContent = state.completed.has(a.id) ? "Locked in" : "Mark done";
+        checkShell.appendChild(checkCircle);
+        checkShell.appendChild(label);
+
+        item.appendChild(icon);
+        item.appendChild(main);
+        item.appendChild(checkShell);
+
+        achievementsListEl.appendChild(item);
+      });
+    }
+
+    function renderStatsAndProgress() {
+      const { total, completedCount, totalStars, earnedStars } = computeStats();
+      totalCountEl.textContent = total;
+      completedCountEl.textContent = completedCount;
+      earnedStarsEl.textContent = earnedStars;
+
+      const progressPercent = totalStars === 0 ? 0 : Math.round((earnedStars / totalStars) * 100);
+      progressFillEl.style.width = progressPercent + "%";
+      progressTextEl.textContent = `${earnedStars} / ${totalStars}⭐`;
+
+      clearCompleteBtn.disabled = completedCount === 0;
+      applyColorSubtitle(completedCount);
+    }
+
+    function renderFilterUI() {
+      document.querySelectorAll(".chip").forEach(chip => {
+        const filter = chip.dataset.filter;
+        chip.classList.toggle("active", state.filter === filter);
+      });
+      focusToggleEl.checked = state.focusMode;
+      document.body.style.filter = state.focusMode ? "saturate(135%) contrast(102%)" : "saturate(100%) contrast(100%)";
+    }
+
+    function fullRender() {
+      renderBadges();
+      renderFilterUI();
+      renderAchievements();
+      renderStatsAndProgress();
+    }
+
+    // === Interaction handlers ===============================================
+    function toggleAchievement(id) {
+      const wasCompleted = state.completed.has(id);
+      if (wasCompleted) {
+        state.completed.delete(id);
+        showToast({ key: "Progress", text: "Tick undone – back to the grind." });
+      } else {
+        state.completed.add(id);
+        const ach = ACHIEVEMENTS.find(a => a.id === id);
+        showToast({
+          key: ach ? ach.name : "Achievement",
+          text: "locked in. That felt good."
+        });
+      }
+      saveState();
+      renderAchievements();
+      renderStatsAndProgress();
+    }
+
+    function handleListClick(e) {
+      const achievementEl = e.target.closest(".achievement");
+      if (!achievementEl) return;
+      const id = achievementEl.dataset.id;
+      if (!id) return;
+
+      // Micro interaction: small tilt based on click position
+      achievementEl.animate(
+        [
+          { transform: "translateY(0px)" },
+          { transform: "translateY(-2px)" },
+          { transform: "translateY(0px)" }
+        ],
+        {
+          duration: 180,
+          easing: "ease-out"
+        }
+      );
+
+      toggleAchievement(id);
+    }
+
+    function handleFilterClick(e) {
+      const chip = e.target.closest(".chip");
+      if (!chip) return;
+      const filter = chip.dataset.filter;
+      if (!filter || filter === state.filter) return;
+      state.filter = filter;
+      saveState();
+      renderFilterUI();
+      renderAchievements();
+    }
+
+    function handleFocusToggle() {
+      state.focusMode = !!focusToggleEl.checked;
+      saveState();
+      renderFilterUI();
+      showToast({
+        key: "Focus mode",
+        text: state.focusMode ? "UI cooled down for clutch sessions." : "Visuals back to full vibrancy."
+      });
+    }
+
+    function handleClearCompleted() {
+      if (!state.completed.size) return;
+      if (!confirm("Clear all ticks for these achievements?")) return;
+      state.completed.clear();
+      saveState();
+      renderAchievements();
+      renderStatsAndProgress();
+      showToast({ key: "Reset", text: "All ticks cleared. Fresh grind unlocked." });
+    }
+
+    function handleTabClick(tab) {
+      tabs.forEach(t => {
+        const active = t === tab;
+        t.classList.toggle("active", active);
+        t.setAttribute("aria-selected", active ? "true" : "false");
+      });
+      const tabName = tab.dataset.tab;
+      if (tabName === "heroic-journey") {
+        achievementsListEl.style.display = "grid";
+        notesListEl.style.display = "none";
+      } else {
+        achievementsListEl.style.display = "none";
+        notesListEl.style.display = "grid";
+      }
+    }
+
+    // Keyboard micro interaction: press space / enter when a tile focused
+    function enableKeyboardNavigation() {
+      achievementsListEl.addEventListener("keydown", e => {
+        if (e.key !== " " && e.key !== "Enter") return;
+        const focused = document.activeElement;
+        if (!focused || !focused.classList.contains("achievement")) return;
+        e.preventDefault();
+        const id = focused.dataset.id;
+        if (id) toggleAchievement(id);
+      });
+    }
+
+    // === Init ================================================================
+    loadState();
+    fullRender();
+
+    // Event bindings
+    achievementsListEl.addEventListener("click", handleListClick);
+    document.getElementById("filterGroup").addEventListener("click", handleFilterClick);
+    focusToggleEl.addEventListener("change", handleFocusToggle);
+    clearCompleteBtn.addEventListener("click", handleClearCompleted);
+    notesArea.addEventListener("input", () => {
+      saveNotes();
+    });
+
+    tabs.forEach(tab => {
+      tab.addEventListener("click", () => handleTabClick(tab));
+    });
+
+    enableKeyboardNavigation();
+  </script>
+</body>
+</html>
